@@ -1,0 +1,90 @@
+stages:
+  - build
+  - deploy
+
+# ==========================================
+# 1. ESTÁGIO DE BUILD (CONSTRUÇÃO DAS IMAGENS)
+# ==========================================
+build_images:
+  stage: build
+  image: docker:24.0.5
+  services:
+    - docker:24.0.5-dind
+  
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+
+  script:
+    - echo "Construindo imagens com a tag $CI_COMMIT_SHORT_SHA..."
+    - docker build -t $CI_REGISTRY_IMAGE/frontend:$CI_COMMIT_SHORT_SHA ./services/frontend
+    - docker push $CI_REGISTRY_IMAGE/frontend:$CI_COMMIT_SHORT_SHA
+    - docker build -t $CI_REGISTRY_IMAGE/gateway:$CI_COMMIT_SHORT_SHA ./services/gateway
+    - docker push $CI_REGISTRY_IMAGE/gateway:$CI_COMMIT_SHORT_SHA
+    - docker build -t $CI_REGISTRY_IMAGE/catalog:$CI_COMMIT_SHORT_SHA ./services/catalog
+    - docker push $CI_REGISTRY_IMAGE/catalog:$CI_COMMIT_SHORT_SHA
+    - docker build -t $CI_REGISTRY_IMAGE/cart:$CI_COMMIT_SHORT_SHA ./services/cart
+    - docker push $CI_REGISTRY_IMAGE/cart:$CI_COMMIT_SHORT_SHA
+    - docker build -t $CI_REGISTRY_IMAGE/order:$CI_COMMIT_SHORT_SHA ./services/order
+    - docker push $CI_REGISTRY_IMAGE/order:$CI_COMMIT_SHORT_SHA
+
+# ==========================================
+# 2A. DEPLOY NO GOOGLE CLOUD (GCP)
+# ==========================================
+deploy_gke:
+  stage: deploy
+  image: google/cloud-sdk:latest
+  rules:
+    - if: '$CLOUD_ALVO == "gcp"'
+  
+  before_script:
+    - apt-get update && apt-get install -y google-cloud-sdk-gke-gcloud-auth-plugin
+    - curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 && chmod 700 get_helm.sh && ./get_helm.sh
+
+  script:
+    - echo "$GCP_SA_KEY_JSON" > gcp-key.json
+    - gcloud auth activate-service-account --key-file=gcp-key.json
+    - gcloud config set project $GCP_PROJECT_ID
+    - gcloud container clusters get-credentials $GKE_CLUSTER_NAME --zone $GKE_LOCATION
+    - echo "Iniciando deploy no GCP..."
+    - helm upgrade --install ecommerce ./helm/ecommerce -n ecommerce --set services.frontend.image.tag=$CI_COMMIT_SHORT_SHA --set services.gateway.image.tag=$CI_COMMIT_SHORT_SHA --set services.catalog.image.tag=$CI_COMMIT_SHORT_SHA --set services.cart.image.tag=$CI_COMMIT_SHORT_SHA --set services.order.image.tag=$CI_COMMIT_SHORT_SHA
+
+# ==========================================
+# 2B. DEPLOY NA AMAZON (AWS)
+# ==========================================
+deploy_eks:
+  stage: deploy
+  image:
+    name: amazon/aws-cli:latest
+    entrypoint: [""]
+  rules:
+    - if: '$CLOUD_ALVO == "aws"'
+  
+  before_script:
+    - yum install -y tar gzip openssl
+    - curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 && chmod 700 get_helm.sh && ./get_helm.sh
+
+  script:
+    - aws eks update-kubeconfig --region $AWS_DEFAULT_REGION --name cluster-devops-aws
+    - echo "Iniciando deploy na AWS..."
+    - helm upgrade --install ecommerce ./helm/ecommerce -n ecommerce --set services.frontend.image.tag=$CI_COMMIT_SHORT_SHA --set services.gateway.image.tag=$CI_COMMIT_SHORT_SHA --set services.catalog.image.tag=$CI_COMMIT_SHORT_SHA --set services.cart.image.tag=$CI_COMMIT_SHORT_SHA --set services.order.image.tag=$CI_COMMIT_SHORT_SHA
+
+# ==========================================
+# 2C. DEPLOY NA MICROSOFT AZURE (AKS)
+# ==========================================
+deploy_aks:
+  stage: deploy
+  image: mcr.microsoft.com/azure-cli
+  rules:
+    - if: '$CLOUD_ALVO == "azure"'
+  
+  before_script:
+    - tdnf install -y tar git
+    - az aks install-cli
+    - export VERIFY_CHECKSUM=false
+    - curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 && chmod 700 get_helm.sh && bash ./get_helm.sh
+
+  script:
+    - az login --service-principal -u $AZURE_APP_ID -p $AZURE_PASSWORD --tenant $AZURE_TENANT
+    - az aks get-credentials --resource-group ecommerce-rg --name cluster-devops-azure
+    - echo "Iniciando deploy na Azure..."
+    - helm upgrade --install ecommerce ./helm/ecommerce -n ecommerce --set services.frontend.image.tag=$CI_COMMIT_SHORT_SHA --set services.gateway.image.tag=$CI_COMMIT_SHORT_SHA --set services.catalog.image.tag=$CI_COMMIT_SHORT_SHA --set services.cart.image.tag=$CI_COMMIT_SHORT_SHA --set services.order.image.tag=$CI_COMMIT_SHORT_SHA
