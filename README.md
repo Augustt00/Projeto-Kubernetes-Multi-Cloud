@@ -1,4 +1,4 @@
-☁️ Multi-Cloud E-commerce Orquestrator & Microservices
+# ☁️ Multi-Cloud E-commerce Orquestrator & Microservices
 
 ![Status](https://img.shields.io/badge/Status-Concluído-success)
 ![AWS](https://img.shields.io/badge/AWS-EKS-FF9900?logo=amazonaws)
@@ -15,14 +15,14 @@ A infraestrutura é provisionada via **Terraform**, enquanto um orquestrador cus
 
 ## 🚀 Arquitetura e Fluxo de CI/CD
 
+<p align="center">
+  <img src="docs/diagrama.png" width="900">
+</p>
+
 1. **Orquestração Inteligente:** O script Python local invoca o Terraform para subir o cluster na nuvem escolhida (AWS, Azure ou GCP).
 2. **Event-Driven API:** Após o provisionamento, o Python atualiza dinamicamente a memória do repositório via GitLab API e aciona o gatilho da pipeline.
 3. **Build & Push:** O GitLab CI constrói as imagens Docker dos 5 microsserviços (Frontend, Gateway, Catalog, Cart, Order) e as envia para o Container Registry.
 4. **Deploy contínuo:** O Helm aplica os manifestos Kubernetes automaticamente no cluster ativo. Atualizações no código (`git push`) realizam deploy automático lendo a variável de estado da nuvem.
-
-<p align="center">
-  <img src="docs/ci-cd-flow.png" width="900">
-</p>
 
 ## 🔒 DevSecOps & 💰 FinOps (Diferenciais)
 * **FinOps (Infracost):** Integrado ao orquestrador Python para calcular a estimativa de custos da infraestrutura *antes* do deploy, evitando surpresas no faturamento.
@@ -36,7 +36,19 @@ O projeto possui uma CLI própria desenvolvida em Python para facilitar a opera�
 python orquestrador.py --nuvem gcp --acao deploy
 
 # Para destruir o ambiente e evitar custos:
-
 python orquestrador.py --nuvem gcp --acao destroy
 
 
+
+```markdown
+## 🧱 Stack Tecnológica
+
+- Kubernetes (EKS / AKS / GKE)
+- Terraform
+- Python CLI Orchestrator
+- GitLab CI/CD
+- Docker
+- Helm
+- Ingress NGINX
+- Trivy (Security)
+- Infracost (FinOps)
