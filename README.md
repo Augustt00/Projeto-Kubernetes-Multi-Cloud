@@ -20,7 +20,9 @@ A infraestrutura é provisionada via **Terraform**, enquanto um orquestrador cus
 3. **Build & Push:** O GitLab CI constrói as imagens Docker dos 5 microsserviços (Frontend, Gateway, Catalog, Cart, Order) e as envia para o Container Registry.
 4. **Deploy contínuo:** O Helm aplica os manifestos Kubernetes automaticamente no cluster ativo. Atualizações no código (`git push`) realizam deploy automático lendo a variável de estado da nuvem.
 
-![Arquitetura CI/CD](docs/diagrama.png)
+<p align="center">
+  <img src="docs/ci-cd-flow.png" width="900">
+</p>
 
 ## 🔒 DevSecOps & 💰 FinOps (Diferenciais)
 * **FinOps (Infracost):** Integrado ao orquestrador Python para calcular a estimativa de custos da infraestrutura *antes* do deploy, evitando surpresas no faturamento.
@@ -36,4 +38,5 @@ python orquestrador.py --nuvem gcp --acao deploy
 # Para destruir o ambiente e evitar custos:
 
 python orquestrador.py --nuvem gcp --acao destroy
+
 
