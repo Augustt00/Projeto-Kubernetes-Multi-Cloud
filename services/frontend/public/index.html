@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="pt-br">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>E-commerce MVP</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">E-commerce MVP</div>
+
+      <nav class="nav">
+        <a href="#/catalog" id="navCatalog">Catálogo</a>
+        <a href="#/cart" id="navCart">Carrinho</a>
+        <a href="#/checkout" id="navCheckout">Checkout</a>
+        <a href="#/payment" id="navPayment">Pagamento</a>
+      </nav>
+
+      <div class="user">
+        Usuário:
+        <input id="userId" value="demo" />
+        <button id="reload">Recarregar</button>
+      </div>
+    </header>
+
+    <main class="container">
+      <div id="view"></div>
+    </main>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

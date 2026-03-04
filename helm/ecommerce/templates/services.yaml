@@ -1,0 +1,20 @@
+{{- $ns := .Values.namespace -}}
+{{- range $name, $svc := .Values.services }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}
+  namespace: {{ $ns }}
+  labels:
+    app.kubernetes.io/name: {{ $name }}
+    {{- include "ecommerce.labels" $ | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: {{ $name }}
+  ports:
+  - name: http
+    port: {{ $svc.port }}
+    targetPort: {{ $svc.port }}
+---
+{{- end }}
